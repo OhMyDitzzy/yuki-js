@@ -119,10 +119,7 @@ async function connectionUpdate(update) {
   }
 
   if (receivedPendingNotifications) {
-    spinner.text = 'Waiting for New Messages...';
-    spinner.start();
-  } else {
-    spinner.succeed("Message successfully loaded");
+    ora().warn('Received pending notifications detected, Waiting for New Messages...');
   }
 
   if (connection === 'close') {
