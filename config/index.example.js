@@ -1,0 +1,27 @@
+// This is an example file
+// to use this file simply
+// change to index.ts 
+
+global.owner = [
+  ['62851xxxx'],
+  ['62851xxxx'],
+  ['62851xxxx', 'DitzDev', 'contact@ditzdev.my.id', true]
+] // Put your number here for owner
+global.mods = ['62851xxxx'] // Moderator: Must be filled
+global.nomorown = "62851xxxx" // your number here
+
+// Will be filled in later
+global.APIs = {
+  /* yourname: "https://api.website" */
+  PaxSenix: "https://api.paxsenix.org"
+}
+
+global.APIKeys = {
+  PaxSenixAPIKey: 'your_api_key' // Get Apikey: https://api.paxsenix.org
+}
+
+global.thumb = "https://files.catbox.moe/7n4axc.png"
+global.sourceUrl = "https://github.com/OhMyDitzzy/Yuki"
+/// Change you own document thumb
+global.docthumb = "https://files.catbox.moe/gfwn8c.png"
+global.multiplier = 100000
