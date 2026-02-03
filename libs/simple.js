@@ -273,6 +273,109 @@ END:VCARD`.trim();
       },
       enumerable: true
     },
+    sendButtonLoc: {
+      async value(jid, text, footer, btn, locOpts = {}, options = {}) {
+        try {
+          if (!jid) throw new TypeError("jid is required");
+          if (!text) throw new TypeError("text is required");
+          if (!Array.isArray(btn)) throw new TypeError("btn must be an array");
+
+          const buttonLimit = 3;
+
+          const validButtons = btn.slice(0, buttonLimit).filter(b =>
+            Array.isArray(b) && b.length >= 2 && b[0] && b[1]
+          );
+
+          if (validButtons.length === 0) {
+            throw new Error("At least one valid button is required");
+          }
+
+          const buttons = validButtons.map((b) => {
+            const [buttonText, buttonId] = b;
+
+            return {
+              buttonId: buttonId.toString().trim(),
+              buttonText: {
+                displayText: buttonText.toString().trim()
+              },
+              type: 1
+            };
+          });
+
+          const content = {
+            buttonsMessage: {
+              contentText: text.toString(),
+              footerText: footer ? footer.toString() : undefined,
+              buttons: buttons,
+              headerType: 6
+            }
+          };
+
+          content.buttonsMessage.locationMessage = {
+            degreesLatitude: 0,
+            degreesLongitude: 0,
+          };
+
+          if (locOpts && typeof locOpts === 'object') {
+            const {
+              degreesLatitude,
+              degreesLongitude,
+              name,
+              address,
+              jpegThumbnail
+            } = locOpts;
+
+            if (degreesLatitude !== undefined) {
+              content.buttonsMessage.locationMessage.degreesLatitude = parseFloat(degreesLatitude) || 0;
+            }
+
+            if (degreesLongitude !== undefined) {
+              content.buttonsMessage.locationMessage.degreesLongitude = parseFloat(degreesLongitude) || 0;
+            }
+
+            if (name !== undefined) {
+              content.buttonsMessage.locationMessage.name = name.toString();
+            }
+
+            if (address !== undefined) {
+              content.buttonsMessage.locationMessage.address = address.toString();
+            }
+
+            if (jpegThumbnail !== undefined) {
+              content.buttonsMessage.locationMessage.jpegThumbnail = jpegThumbnail;
+            }
+          }
+
+          if (options && typeof options === 'object') {
+            if (options.contextInfo) {
+              content.buttonsMessage.contextInfo = options.contextInfo;
+            }
+
+            if (options.mentions) {
+              content.buttonsMessage.mentions = options.mentions;
+            }
+          }
+
+          const msg = generateWAMessageFromContent(
+            jid,
+            content,
+            {
+              ...options,
+              userJid: this.user.id
+            }
+          );
+
+          await conn.relayMessage(jid, msg.message, {
+            messageId: msg.key.id,
+            ...options
+          });
+
+        } catch (error) {
+          console.error('Error in sendButtonLoc:', error);
+          throw error;
+        }
+      }
+    },
     sendList: {
       async value(
         jid,
