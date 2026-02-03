@@ -1,4 +1,4 @@
-import _makeWASocket, { areJidsSameUser, downloadContentFromMessage, extractMessageContent, generateForwardMessageContent, generateWAMessageFromContent, getDevice, jidDecode, proto, WAMessageStubType } from "baileys";
+import _makeWASocket, { areJidsSameUser, downloadContentFromMessage, extractMessageContent, generateForwardMessageContent, generateWAMessage, delay, generateWAMessageFromContent, getDevice, isJidNewsletter, jidDecode, proto, WAMessageStubType } from "baileys";
 import { toAudio } from "./converter.js";
 import chalk from "chalk";
 import { format } from "util";
@@ -10,6 +10,7 @@ import path from "path";
 import { Jimp, JimpMime } from 'jimp';
 import { makeInMemoryStore } from "./makeInMemoryStore.js"
 import pino from "pino";
+import { randomBytes } from "crypto";
 
 global.store = await makeInMemoryStore({ logger: pino().child({ level: "silent", stream: "store" }), saveInterval: 60000 })
 
@@ -196,6 +197,121 @@ END:VCARD`.trim();
           }, { quoted, ...options });
         } catch (err) {
           throw new Error('Error: ' + err.message);
+        }
+      },
+      enumerable: true
+    },
+    sendAlbum: {
+      async value(jid, medias, options = {}) {
+        for (const media of medias) {
+          if (!media.image && !media.video)
+            throw new TypeError(`medias[i] must have image or video property`)
+        }
+
+        const time = options.delay || 500
+        delete options.delay
+
+        const album = generateWAMessageFromContent(jid, {
+          albumMessage: {
+            expectedImageCount: medias.filter(media => media.image).length,
+            expectedVideoCount: medias.filter(media => media.video).length,
+            ...options
+          }
+        }, { userJid: conn.user.lid, ...options })
+        await conn.relayMessage(jid, album.message, { messageId: album.key.id })
+
+        let msg;
+        for (const i in medias) {
+          const media = medias[i]
+          if (media.image) {
+            msg = await generateWAMessage(jid, {
+              image: media.image,
+              ...media,
+              ...options
+            }, {
+              userJid: conn.user.lis,
+              upload: async (readStream, opts) => {
+                const up = await conn.waUploadToServer(readStream, {
+                  ...opts,
+                  newsletter: isJidNewsletter(jid)
+                })
+                return up
+              },
+              ...options
+            })
+          } else if (media.video) {
+            msg = await generateWAMessage(jid, {
+              video: media.video,
+              ...media,
+              ...options
+            }, {
+              userJid: conn.user.lid,
+              upload: async (readStream, opts) => {
+                const up = await conn.waUploadToServer(readStream, {
+                  ...opts,
+                  newsletter: isJidNewsletter(jid)
+                })
+                return up
+              },
+              ...options,
+            })
+          }
+          if (msg) {
+            msg.message.messageContextInfo = {
+              messageSecret: randomBytes(32),
+              messageAssociation: {
+                associationType: 1,
+                parentMessageKey: album.key
+              }
+            }
+          }
+          await conn.relayMessage(jid, msg.message, {
+            messageId: msg.key.id
+          })
+          await delay(time)
+        }
+      },
+      enumerable: true
+    },
+    sendList: {
+      async value(
+        jid,
+        btnOpts,
+        buttons,
+        quoted
+      ) {
+        try {
+          let msg = generateWAMessageFromContent(jid, {
+            interactiveMessage: proto.Message.InteractiveMessage.create({
+              ...(btnOpts.contextInfo && {
+                contextInfo: btnOpts.contextInfo
+              }),
+              ...(btnOpts.header && {
+                header: proto.Message.InteractiveMessage.Header.create(btnOpts.header)
+              }),
+              ...(btnOpts.body && {
+                body: proto.Message.InteractiveMessage.Body.create(btnOpts.body)
+              }),
+              ...(btnOpts.footer && {
+                footer: proto.Message.InteractiveMessage.Footer.create(btnOpts.footer)
+              }),
+              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                buttons: [{
+                  name: "single_select",
+                  buttonParamsJson: JSON.stringify(buttons)
+                }],
+                ...(btnOpts.messageParamsJson && {
+                  messageParamsJson: JSON.stringify(btnOpts.messageParamsJson)
+                })
+              })
+            })
+          }, quoted)
+
+          await conn.relayMessage(jid, msg.message, {
+            messageId: msg.key.id,
+          })
+        } catch (e) {
+          console.error(e)
         }
       },
       enumerable: true

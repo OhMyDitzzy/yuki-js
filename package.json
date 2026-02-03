@@ -25,7 +25,7 @@
     "@adiwajshing/keyed-db": "^0.2.4",
     "awesome-phonenumber": "^3.4.0",
     "axios": "^1.13.3",
-    "baileys": "^7.0.0-rc.9",
+    "baileys": "npm:yuki-baileys@^7.0.3",
     "better-sqlite3": "^12.6.2",
     "cfonts": "^3.3.1",
     "chalk": "^5.6.2",

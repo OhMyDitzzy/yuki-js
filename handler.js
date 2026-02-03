@@ -23,7 +23,7 @@ export async function handler(chatUpdate) {
     m.limit = false;
 
     try {
-      initializeDatabase(m, this.user.lid);
+      initializeDatabase(m, this.user.jid);
     } catch (e) {
       console.error(e);
     }
