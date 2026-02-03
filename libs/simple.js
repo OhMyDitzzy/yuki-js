@@ -367,7 +367,6 @@ END:VCARD`.trim();
 
           await conn.relayMessage(jid, msg.message, {
             messageId: msg.key.id,
-            ...options
           });
 
         } catch (error) {
