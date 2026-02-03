@@ -51,12 +51,15 @@ function start(file) {
     }
   });
 
-  p.on('exit', (_, code) => {
+  p.on('exit', (code, _) => {
     isRunning = false;
     console.error('[❗] Exited with code:', code);
     if (code !== 0) {
       console.log('Restarting worker due to non-zero exit code...');
       return start(file);
+    } else {
+      p.kill();
+      process.exit(0);
     }
 
     watchFile(args[0], () => {

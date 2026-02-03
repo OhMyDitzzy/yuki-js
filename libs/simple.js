@@ -858,8 +858,12 @@ END:VCARD`.trim();
               message.message?.senderKeyDistributionMessage?.groupId ||
               "",
             );
-            if (message.message?.[mtype]?.contextInfo?.quotedMessage) {
+            if (mtype && message.message[mtype] && message.message[mtype].contextInfo?.quotedMessage) {
               let context = message.message[mtype].contextInfo;
+              if (!context || !context.quotedMessage || typeof context.quotedMessage !== 'object' || Object.keys(context.quotedMessage).length === 0) {
+                continue;
+              }
+              
               let participant = await conn.decodeJid(context.participant);
               const remoteJid = await conn.decodeJid(
                 context.remoteJid || participant,
@@ -867,6 +871,7 @@ END:VCARD`.trim();
 
               let quoted =
                 message.message[mtype].contextInfo.quotedMessage;
+              if (!quoted) continue;
               if (remoteJid && remoteJid !== "status@broadcast" && quoted) {
                 let qMtype = Object.keys(quoted)[0];
                 if (qMtype == "conversation") {

@@ -10,12 +10,10 @@ export async function handler(chatUpdate) {
   this.msgqueque = this.msgqueque || [];
   if (!chatUpdate) return;
   this.pushMessage(chatUpdate.messages).catch(console.error);
-
   let m = chatUpdate.messages[chatUpdate.messages.length - 1];
-
   if (!m) return;
   if (global.db.data === null) await loadDatabase();
-
+  if (m.mtype === "templateButtonReplyMessage") this.appenTextMessage(m.msg.selectedId, chatUpdate)
   try {
     m = smsg(this, m);
     if (!m) return;
@@ -194,10 +192,6 @@ export async function handler(chatUpdate) {
         let user = global.db.data.users[m.sender]
         if (name != 'owner/unbanchat.js' && chat && chat.isBanned) return
         if (name != 'owner/unbanuser.js' && user && user.banned && !user.moderator) return fail('banned', m, this)
-      }
-      if (plugin.onlyRealOwner && plugin.onlyOwner && !(isROwner || isOwner)) {
-        fail('owner', m, this)
-        continue
       }
       if (plugin.onlyRealOwner && !isROwner) { // Real Owner
         fail('rowner', m, this)
