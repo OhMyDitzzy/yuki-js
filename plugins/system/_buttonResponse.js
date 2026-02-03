@@ -87,7 +87,7 @@ export async function all(m, chatUpdate) {
     messageOptions
   )
   
-  // The problem: m.sender is a LID (113172572811369@lid), while this.user.id is a PN format (6285129807825:74@s.whatsapp.net). So areJidsSameUser returns false, so fromMe becomes false
+  // The problem: m.sender is a LID (1111@lid), while this.user.id is a PN format (628xx:74@s.whatsapp.net). So areJidsSameUser returns false, so fromMe becomes false
   // The best solution is to use m.fromMe which is already set up correctly by Baileys, because fromMe already handles LID vs PN internally.
   messages.key.fromMe = m.fromMe
   messages.key.id = m.key.id
