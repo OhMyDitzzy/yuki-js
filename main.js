@@ -404,9 +404,16 @@ async function _quickTest() {
 async function initialize() {
   try {
     await global.loadDatabase();
+    
+    global.db.startAutoBackup(6, 'data/backups');
+    
+    global.db.cleanupInterval = setInterval(() => {
+      global.db.cleanOldBackups('data/backups', 7);
+    }, 24 * 60 * 60 * 1000);
+    
     await _quickTest().catch(console.error);
     await loadAllPlugins();
-    await global.reloadHandler();
+    await global.reloadHandler();    
 
     if (!opts["test"]) {
       setInterval(async () => {

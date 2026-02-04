@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, copyFileSync } from 'fs';
 import { dirname, join } from 'path';
 
 export class SQLiteDB {
@@ -8,13 +8,15 @@ export class SQLiteDB {
     this.p = null;
     this.F = false;
     this.c = {};
+    this.dbPath = join(process.cwd(), k2);
 
-    const d = dirname(join(process.cwd(), k2));
+    const d = dirname(this.dbPath);
     if (!existsSync(d)) mkdirSync(d, { recursive: true });
 
-    this.v1 = new Database(join(process.cwd(), k2));
+    this.v1 = new Database(this.dbPath);
     this.v1.pragma('journal_mode = WAL');
-    
+    this.v1.pragma('wal_autocheckpoint = 500');
+
     this.i();
     this.a();
     this.p = this.l();
@@ -49,7 +51,7 @@ export class SQLiteDB {
 
   l() {
     const s = this;
-    
+
     const m = (t, b, i) => {
       return new Proxy(t, {
         get(o, p) {
@@ -68,7 +70,7 @@ export class SQLiteDB {
         }
       });
     };
-    
+
     const h = {
       get(g, b) {
         if (typeof b === 'symbol') return g[b];
@@ -126,7 +128,7 @@ export class SQLiteDB {
         });
       }
     };
-    
+
     return new Proxy({}, h);
   }
 
@@ -149,9 +151,99 @@ export class SQLiteDB {
         });
       }
     });
+    this.checkpoint();
+  }
+
+  checkpoint() {
+    try {
+      return this.v1.pragma('wal_checkpoint(TRUNCATE)');
+    } catch (e) {
+      console.error('Checkpoint error:', e);
+      return null;
+    }
+  }
+
+  async backup(bp) {
+    try {
+      const bd = dirname(bp);
+      if (!existsSync(bd)) mkdirSync(bd, { recursive: true });
+      this.checkpoint();
+      await this.v1.backup(bp);
+      console.log(`✅ Backup: ${bp}`);
+      return { success: true, path: bp };
+    } catch (e) {
+      console.error('❌ Backup failed:', e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  async autoBackup(bf = 'data/backups') {
+    const d = new Date();
+    const ts = d.toISOString().split('T')[0];
+    const tm = d.toTimeString().split(' ')[0].replace(/:/g, '-');
+    const fn = `user-${ts}_${tm}.db`;
+    return await this.backup(join(bf, fn));
+  }
+
+  startAutoBackup(ih = 6, bf = 'data/backups') {
+    this.autoBackup(bf).then(r => r.success && console.log('✅ Initial backup created'));
+    this.bi = setInterval(async () => {
+      console.log('🔄 Scheduled backup...');
+      const r = await this.autoBackup(bf);
+      r.success && console.log('✅ Backup done');
+    }, ih * 60 * 60 * 1000);
+    console.log(`✅ Auto backup enabled (every ${ih}h)`);
+  }
+
+  cleanOldBackups(bf = 'data/backups', kd = 7) {
+    try {
+      if (!existsSync(bf)) return { deleted: 0, files: [] };
+      const fs = readdirSync(bf);
+      const now = Date.now();
+      const ma = kd * 24 * 60 * 60 * 1000;
+      let dc = 0;
+      let deletedFiles = [];
+      fs.forEach(f => {
+        if (!f.endsWith('.db')) return;
+        const fp = join(bf, f);
+        const st = statSync(fp);
+        if (now - st.mtimeMs > ma) {
+          unlinkSync(fp);
+          console.log(`🗑️ Deleted: ${f}`);
+          deletedFiles.push(f);
+          dc++;
+        }
+      });
+      dc > 0 && console.log(`✅ Cleaned ${dc} backup(s)`);
+      return { deleted: dc, files: deletedFiles };
+    } catch (e) {
+      console.error('Cleanup error:', e);
+      return { deleted: 0, files: [], error: e.message };
+    }
+  }
+
+  async restore(bp) {
+    try {
+      if (!existsSync(bp)) throw new Error('Backup not found!');
+      this.v1.close();
+      copyFileSync(bp, this.dbPath);
+      this.v1 = new Database(this.dbPath);
+      this.v1.pragma('journal_mode = WAL');
+      this.v1.pragma('wal_autocheckpoint = 500');
+      this.a();
+      this.p = this.l();
+      console.log(`✅ Restored: ${bp}`);
+      return { success: true };
+    } catch (e) {
+      console.error('❌ Restore failed:', e);
+      return { success: false, error: e.message };
+    }
   }
 
   close() {
+    if (this.bi) clearInterval(this.bi);
+    if (this.ci) clearInterval(this.ci);
+    this.checkpoint();
     this.v1.close();
   }
 }
