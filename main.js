@@ -11,7 +11,6 @@ import syntaxerror from "syntax-error";
 import { spawn } from 'child_process';
 import { format } from "util";
 import chalk from "chalk";
-import ora from "ora";
 import yargs from "yargs";
 import { serialize, protoType, makeWASocket } from './libs/simple.js';
 import { SQLiteDB } from "./libs/database.js";
@@ -25,8 +24,6 @@ process.loadEnvFile();
 
 protoType();
 serialize();
-
-const spinner = ora("Initializing bot...").start();
 
 global.API = (name, path = '/', query = {}, apikeyqueryname) => (name in global.APIs ? global.APIs[name] : name) + path + (query || apikeyqueryname ? '?' + new URLSearchParams(Object.entries({ ...query, ...(apikeyqueryname ? { [apikeyqueryname]: global.APIKeys[name in global.APIs ? global.APIs[name] : name] } : {}) })) : '')
 
@@ -90,12 +87,11 @@ async function connectionUpdate(update) {
 
   if (qr) {
     if (!conn.authState.creds.registered) {
-      spinner.text = "No accounts linked to the bot yet, Trying to request a pairing code...";
-      spinner.start();
+      conn.logger.info("No accounts linked to the bot yet, Trying to request a pairing code...");
       setTimeout(async () => {
         let code = await conn.requestPairingCode(process.env.PAIRING_NUMBER, "DITZDEVS")
         code = code?.match(/.{1,4}/g)?.join('-') || code
-        spinner.succeed("Code successfully requested!")
+        conn.logger.info("Code successfully requested!")
         console.log(chalk.black(chalk.bgGreen(`Your pairing code : `)), chalk.black(chalk.white(code)))
       }, 3000)
     }
@@ -106,39 +102,38 @@ async function connectionUpdate(update) {
   }
 
   if (connection === 'connecting') {
-    spinner.text = 'Activating Bot, Please wait a moment...';
-    spinner.start();
+    conn.logger.info('Activating Bot, Please wait a moment...');
   } else if (connection === 'open') {
-    spinner.succeed('Connected... ✓');
+    conn.logger.info('Connected... ✓');
   }
 
   if (isOnline === true) {
-    ora().succeed('Active Status... ✓');
+    conn.logger.info('Active Status... ✓');
   } else if (isOnline === false) {
-    ora().fail('Dead Status');
+    conn.logger.warn('Dead Status');
   }
 
   if (receivedPendingNotifications) {
-    ora().warn('Received pending notifications detected, Waiting for New Messages...');
+    conn.logger.warn('Received pending notifications detected, Waiting for New Messages...');
   }
 
   if (connection === 'close') {
     // TODO: Implement a gracefull shutdown
     /*if (conn.isShuttingDown) {
-      ora().info('Connection closed gracefully');
+      conn.logger.info('Connection closed gracefully');
       return;
     }*/
 
-    spinner.fail('Connection lost...');
+    conn.logger.error('Connection lost...');
 
     if (lastDisconnect?.error) {
       const statusCode = lastDisconnect.error.output?.statusCode;
       const errorMessage = lastDisconnect.error.output?.payload?.message || lastDisconnect.error.message;
 
-      ora().fail(`Disconnect reason: ${errorMessage} (${statusCode})`);
+      conn.logger.error(`Disconnect reason: ${errorMessage} (${statusCode})`);
 
       if (statusCode === DisconnectReason.loggedOut) {
-        ora().fail('Logged out permanently. Please do pairing code again.');
+        conn.logger.error('Logged out permanently. Please do pairing code again.');
         process.exit(0);
       }
 
@@ -155,7 +150,7 @@ async function connectionUpdate(update) {
             ]);
           });
         } catch (e) {
-          ora().fail(`Failed to clear session: ${e}`);
+          conn.logger.error(`Failed to clear session: ${e}`);
         }
         process.exit(0);
       }
@@ -166,23 +161,22 @@ async function connectionUpdate(update) {
         statusCode === DisconnectReason.connectionReplaced ||
         statusCode === DisconnectReason.timedOut
       ) {
-        spinner.text = 'Connection issue detected. Attempting reconnect in 5s...';
-        spinner.start();
+        conn.logger.info('Connection issue detected. Attempting reconnect in 5s...');
 
         try {
           if (saveCreds && state?.creds) {
             await saveCreds();
-            ora().info('Credentials saved before reconnect');
+            conn.logger.info('Credentials saved before reconnect');
           }
         } catch (e) {
-          ora().fail(`Failed to save creds before reconnect: ${e}`);
+          conn.logger.error(`Failed to save creds before reconnect: ${e}`);
         }
 
         setTimeout(async () => {
           try {
             await global.reloadHandler(true);
           } catch (e) {
-            ora().fail(`Reconnect failed: ${e}`);
+            conn.logger.error(`Reconnect failed: ${e}`);
             process.exit(1);
           }
         }, 5000);
@@ -190,29 +184,28 @@ async function connectionUpdate(update) {
       }
 
       if (statusCode === DisconnectReason.restartRequired) {
-        spinner.text = 'Restart required by WhatsApp...';
-        spinner.start();
+        conn.logger.info('Restart required by WhatsApp...');
 
         try {
           if (saveCreds && state?.creds) {
             await saveCreds();
           }
         } catch (e) {
-          ora().fail(`Failed to save creds: ${e}`);
+          conn.logger.error(`Failed to save creds: ${e}`);
         }
 
         setTimeout(async () => {
           try {
             await global.reloadHandler(true);
           } catch (e) {
-            ora().fail(`Reconnect failed: ${e}`);
+            conn.logger.error(`Reconnect failed: ${e}`);
             process.exit(1);
           }
         }, 5000);
         return;
       }
 
-      ora().fail(`Unknown disconnect reason: ${statusCode}`);
+      conn.logger.error(`Unknown disconnect reason: ${statusCode}`);
       setTimeout(async () => {
         try {
           if (saveCreds && state?.creds) {
@@ -220,7 +213,7 @@ async function connectionUpdate(update) {
           }
           await global.reloadHandler(true);
         } catch (e) {
-          ora().fail(`Reconnect failed: ${e}`);
+          conn.logger.error(`Reconnect failed: ${e}`);
           process.exit(1);
         }
       }, 5000);
@@ -295,25 +288,24 @@ async function loadAllPlugins() {
   let jsFiles = getAllJsFiles(pluginsFolder);
   global.plugins = {};
 
-  spinner.text = "Loading ${tsFiles.length} plugins, please wait...";
-  spinner.start();
+  conn.logger.info(`Loading ${jsFiles.length} plugins, please wait...`);
 
   for (let fullPath of jsFiles) {
     const filename = path.relative(pluginsFolder, fullPath);
 
-    if (filename.includes('_utils' + path.sep) || filename.endsWith('_utils.ts')) continue;
+    if (filename.includes('_utils' + path.sep) || filename.endsWith('_utils.js')) continue;
 
     try {
       let file = global.__filename(path.join(pluginsFolder, filename))
       const module = await import(file)
       global.plugins[filename] = module.default || module
     } catch (e) {
-      spinner.fail(`Failed to load plugins ${filename}: ${e}`);
+      conn.logger.error(`Failed to load plugins ${filename}: ${e}`);
       delete global.plugins[filename]
     }
   }
 
-  spinner.succeed("Plugins loaded... ✓");
+  conn.logger.info("Plugins loaded... ✓");
   return Object.keys(global.plugins).length;
 }
 
@@ -389,20 +381,22 @@ async function _quickTest() {
   Object.freeze(global.support);
 
   if (!s.ffmpeg) {
-    ora().warn(`Please install ffmpeg first to be able to process videos.`);
+    conn.logger.warn(`Please install ffmpeg first to be able to process videos.`);
   }
 
   if (s.ffmpeg && !s.ffmpegWebp) {
-    ora().warn('Stickers May Not Animate without libwebp in ffmpeg (--enable-libwebp while compiling ffmpeg)');
+    conn.logger.warn('Stickers May Not Animate without libwebp in ffmpeg (--enable-libwebp while compiling ffmpeg)');
   }
 
   if (!s.convert && !s.magick && !s.gm) {
-    ora().warn('Sticker Feature May Not Work Without imagemagick and libwebp in ffmpeg not installed');
+    conn.logger.warn('Sticker Feature May Not Work Without imagemagick and libwebp in ffmpeg not installed');
   }
 }
 
 async function initialize() {
   try {
+    conn.logger.info("Initializing bot...");
+    
     await global.loadDatabase();
     
     global.db.startAutoBackup(6, 'data/backups');
@@ -446,9 +440,9 @@ async function initialize() {
       .on("add", global.reload)
       .on("unlink", global.reload);
 
-    spinner.succeed("Bot successfully initialized!");
+    conn.logger.info("Bot successfully initialized!");
   } catch (e) {
-    spinner.fail("Failed to initialize bot: " + e)
+    conn.logger.error("Failed to initialize bot: " + e)
     process.exit(0);
   }
 }

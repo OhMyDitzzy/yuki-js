@@ -36,7 +36,6 @@
     "form-data": "^4.0.5",
     "jimp": "^1.6.0",
     "node-webpmux": "^3.2.1",
-    "ora": "^9.1.0",
     "pino": "^10.3.0",
     "syntax-error": "^1.4.0",
     "terminal-image": "^4.2.0",
