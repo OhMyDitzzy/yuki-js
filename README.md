@@ -19,12 +19,15 @@ Yuki.js merupakan penerus (successor) dari project Yuki sebelumnya yang dibangun
 Keputusan untuk berpindah dari Bun ke Node.js bukan tanpa alasan. Beberapa pertimbangan utama antara lain:
 
 - Kompatibilitas Library
+
 Yuki menggunakan library [Baileys](https://github.com/WhiskeySockets/Baileys) yang secara native memang dirancang untuk lingkungan Node.js. Meskipun masih bisa berjalan di Bun, Node.js memberikan kompatibilitas yang lebih stabil.
 
 - Kematangan Ekosistem
+
 Walaupun secara performa Bun dikenal sangat cepat (bahkan Yuki versi lama memiliki performa yang mengesankan), Node.js unggul dalam hal kematangan fitur, stabilitas API, dan dukungan ekosistem yang lebih luas.
 
 - Stabilitas Jangka Panjang
+
 Untuk bot WhatsApp yang diharapkan berjalan lama tanpa gangguan, Node.js saat ini menjadi pilihan yang lebih aman.
 
 ---
