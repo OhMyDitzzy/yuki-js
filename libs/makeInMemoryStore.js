@@ -203,7 +203,7 @@ export const makeInMemoryStore = async (config) => {
   } catch (e) {
     logger.error({ error: e }, 'Failed to initialize database');
   }
-  
+
   const chats = new KeyedDB.default(chatKey, (c) => c.id);
   const messages = {};
   const contacts = {};
@@ -580,11 +580,34 @@ export const makeInMemoryStore = async (config) => {
 
   const cleanup = async () => {
     stopAutoSave();
-    writeToDatabase();
+
+    // We save it first before cleaning (optional, can be deleted if we want a full cleanup)
+    // writeToDatabase();
+    chats.clear();
+    labelAssociations.clear();
+
+    for (const jid in messages) {
+      delete messages[jid];
+    }
+
+    for (const jid in contacts) {
+      delete contacts[jid];
+    }
+
+    for (const jid in groupMetadata) {
+      delete groupMetadata[jid];
+    }
+
+    for (const jid in presences) {
+      delete presences[jid];
+    }
+
+    labels.entityMap.clear();
 
     if (db) {
       try {
         db.close();
+        db = null;
         logger.info('Database connection closed');
       } catch (e) {
         logger.error({ error: e }, 'Failed to close database');
@@ -608,6 +631,15 @@ export const makeInMemoryStore = async (config) => {
       }
     } catch (e) {
       logger.error({ error: e }, 'Failed to delete store database files');
+    }
+
+    try {
+      db = initializeDatabase(STORE_PATH);
+      logger.info({ path: STORE_PATH }, 'Store reinitialized with fresh database');
+
+      startAutoSave();
+    } catch (e) {
+      logger.error({ error: e }, 'Failed to reinitialize database after cleanup');
     }
   };
 

@@ -399,6 +399,19 @@ async function initialize() {
       global.db.cleanOldBackups('data/backups', 7);
     }, 24 * 60 * 60 * 1000);
     
+    if (global.store) {
+      global.store.storeCleanupInterval = setInterval(async () => {
+        try {
+          await global.store.cleanup();
+          conn.logger.info('Store cleanup completed successfully');
+        } catch (e) {
+          conn.logger.error('Store cleanup failed:', e);
+        }
+      }, 6 * 60 * 60 * 1000);
+      
+      conn.logger.info('Store auto-cleanup scheduled (every 6 hours)');
+    }
+    
     await _quickTest().catch(console.error);
     await loadAllPlugins();
     await global.reloadHandler();    
