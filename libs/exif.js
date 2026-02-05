@@ -6,7 +6,7 @@ import { promisify } from 'util';
 import { createWriteStream, existsSync, unlinkSync, readFileSync, writeFileSync } from 'fs';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import ffmpeg from 'fluent-ffmpeg';
-import { Image } from 'node-webpmux';
+import webp from 'node-webpmux';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const temp = process.platform === 'win32' ? process.env.TEMP : tmpdir();
@@ -131,7 +131,7 @@ export async function writeExif(media, metadata) {
   }
 
   if (metadata && Object.keys(metadata).length !== 0) {
-    const img = new Image();
+    const img = new webp.Image();
     const json = {
       'sticker-pack-id': metadata.packId || `DitzDev-${Date.now()}`,
       'sticker-pack-name': metadata.packName || '',
