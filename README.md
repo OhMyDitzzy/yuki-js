@@ -1,157 +1,96 @@
-<div align="center">
-  <img src="https://telegra.ph/file/0eae512de17b5267d3fef.jpg" alt="Yuki Banner" />
-  <h1>Yuki Suou</h1>
-  <p><strong>Yuki</strong> adalah script bot WhatsApp yang stabil dan cocok untuk penggunaan jangka panjang (long runtime). Biarkan Yuki bekerja di balik layar, sementara kamu mengatur dan mengembangkan script‑nya dengan mudah.</p>
-</div>
+# ❄️ Yuki Botz - Asisten Otomatis WhatsApp
 
-> [!WARNING] 
-> This documentation is written in Indonesian. Please use your browser's translation feature if necessary.
-
-
-## Perkenalan
-
-Yuki.js adalah script bot WhatsApp yang stabil, modular, dan mudah dikembangkan. Script ini berjalan di atas Node.js.
-
-Yuki.js merupakan penerus (successor) dari project Yuki sebelumnya yang dibangun menggunakan Bun. Project lama tersebut kini sudah deprecated dan tidak lagi dikembangkan. Kamu masih bisa melihat source code‑nya di sini: 👉 https://github.com/OhMyDitzzy/Yuki
-
-## Kenapa Yuki Sekarang Menggunakan Node.js?
-
-Keputusan untuk berpindah dari Bun ke Node.js bukan tanpa alasan. Beberapa pertimbangan utama antara lain:
-
-- Kompatibilitas Library
-
-Yuki menggunakan library [Baileys](https://github.com/WhiskeySockets/Baileys) yang secara native memang dirancang untuk lingkungan Node.js. Meskipun masih bisa berjalan di Bun, Node.js memberikan kompatibilitas yang lebih stabil.
-
-- Kematangan Ekosistem
-
-Walaupun secara performa Bun dikenal sangat cepat (bahkan Yuki versi lama memiliki performa yang mengesankan), Node.js unggul dalam hal kematangan fitur, stabilitas API, dan dukungan ekosistem yang lebih luas.
-
-- Stabilitas Jangka Panjang
-
-Untuk bot WhatsApp yang diharapkan berjalan lama tanpa gangguan, Node.js saat ini menjadi pilihan yang lebih aman.
+**Yuki Botz** adalah program komputer (bot) yang bisa berjalan otomatis di WhatsApp Anda. Bot ini bisa membantu Anda membuat stiker, mengunduh video, menjaga grup dari orang asing, hingga bermain game ekonomi bersama teman-teman.
 
 ---
-## Instalasi
 
-Proses instalasi Yuki.js sedikit berbeda dibandingkan Yuki versi lama. Ikuti langkah‑langkah berikut dengan seksama.
+## ✨ Apa saja yang bisa dilakukan Yuki?
 
-1. Clone Repository
+*   **🎨 Pembuat Stiker Otomatis:** Kirim gambar atau video, dan Yuki akan mengubahnya menjadi stiker dalam hitungan detik.
+*   **🛡️ Penjaga Grup (Security):** Otomatis mengeluarkan orang yang mengirim link iklan atau bot lain yang tidak dikenal.
+*   **🎮 Game & Ekonomi:** Pengguna bisa mengumpulkan uang virtual (XP, Money, Gold) untuk naik level dan bersaing dengan pengguna lain.
+*   **📥 Downloader:** Bisa mengunduh video dari media sosial (fitur tergantung plugin yang tersedia).
+*   **🚫 Anti-Telepon:** Bot akan otomatis menolak telepon dan memblokir orang yang mencoba menelepon nomor bot agar tidak mengganggu.
 
-Klon repositori ini atau unduh sebagai file ZIP langsung dari GitHub. Pastikan git sudah terpasang di sistem kamu.
+---
 
+## 🛠️ Persiapan Sebelum Memulai
+
+Agar Yuki bisa berjalan, komputer atau VPS Anda harus memiliki 3 aplikasi ini:
+
+1.  **Node.js (Versi 20 ke atas):** Ini adalah "mesin" utama untuk menjalankan kode bot. [Download di sini](https://nodejs.org/).
+2.  **FFmpeg:** Aplikasi ini wajib ada agar bot bisa membuat stiker dan memproses audio/video.
+3.  **Git:** Digunakan untuk mengambil kode bot ini dari internet.
+
+---
+
+## 🚀 Langkah-Langkah Instalasi (Untuk Pemula)
+
+Ikuti langkah-langkah di bawah ini secara berurutan:
+
+### 1. Ambil Kode Bot
+Buka Terminal (atau CMD), lalu ketik:
 ```bash
-git clone https://github.com/OhMyDitzzy/yuki-js
-```
-
-Masuk ke direktori project:
-```bash
+git clone https://github.com/OhMyDitzzy/yuki-js.git
 cd yuki-js
 ```
 
----
-
-### 2. Mengatur Konfigurasi
-
-Di dalam project, kamu akan menemukan dua file contoh konfigurasi:
-- env.example
-- config/index.example.js
-
-Kedua file ini perlu kamu sesuaikan sebelum menjalankan bot.
-
-#### a. Konfigurasi Environment (env.example)
-```
-# Path database untuk auth state dan user
-DB_PATH="/data/auth.db"
-USER_DB_PATH="/data/user.db"
-
-# Nomor WhatsApp yang akan digunakan sebagai bot
-PAIRING_NUMBER="628512345"
-```
-
-Ubah nilai PAIRING_NUMBER dengan nomor WhatsApp yang akan dijadikan bot.
-
-> [!WARNING] 
-> Tidak disarankan mengubah variabel lain selain PAIRING_NUMBER, kecuali kamu benar‑benar memahami apa yang kamu lakukan (misalnya ingin mengkustomisasi lokasi database).
-
-
-Setelah itu, ubah nama file env.example menjadi:
-```
-.env
-```
-
----
-
-#### b. Konfigurasi Bot (config/index.example.js)
-
-```javascript
-// This is an example file
-// To use this file, rename it to index.js or index.ts
-
-global.owner = [
-  ['62851xxxx'],
-  ['62851xxxx'],
-  ['62851xxxx', 'DitzDev', 'contact@ditzdev.my.id', true]
-] // Daftar owner bot
-
-global.mods = ['62851xxxx'] // Moderator (wajib diisi)
-global.nomorown = '62851xxxx' // Nomor utama owner
-
-// API configuration
-global.APIs = {
-  PaxSenix: 'https://api.paxsenix.org'
-}
-
-global.APIKeys = {
-  PaxSenixAPIKey: 'your_api_key' // Dapatkan API Key di https://api.paxsenix.org
-}
-
-global.thumb = 'https://files.catbox.moe/7n4axc.png'
-global.sourceUrl = 'https://github.com/OhMyDitzzy/Yuki'
-
-global.docthumb = 'https://files.catbox.moe/gfwn8c.png'
-global.multiplier = 100000
-```
-
-Di file ini kamu bisa:
-- Menentukan Owner bot
-- Menentukan Moderator (Mods)
-- Mengatur API dan API Key
-- Mengkustomisasi thumbnail dan informasi lainnya
-
-Setelah selesai, ubah nama file index.example.js menjadi:
-```
-index.js
-```
-
-### 3. Instalasi Dependensi & Menjalankan Bot
-
-Pastikan Node.js sudah terinstal. Jika belum, unduh dari sini: 👉 https://nodejs.org
-
-Node.js sudah menyertakan NPM (Node Package Manager) secara default.
-
-Install semua dependensi:
+### 2. Instal Bahan-Bahan
+Ketik perintah ini untuk mendownload semua pustaka yang dibutuhkan bot:
 ```bash
 npm install
 ```
 
-Jalankan bot:
+### 3. Pengaturan Nomor Owner (PENTING!)
+Agar Anda menjadi "Tuan" dari bot ini dan bisa mengatur segalanya:
+1.  Masuk ke folder `config`, lalu cari file bernama `index.example.js`.
+2.  Ubah nama file tersebut menjadi `index.js`.
+3.  Buka file `index.js` tersebut menggunakan Notepad atau VS Code.
+4.  Cari bagian `global.owner` dan ganti nomor di dalamnya dengan nomor WhatsApp Anda (Gunakan format 62xxx). Contoh: `['6285123456789']`.
+
+### 4. Pengaturan Identitas Bot
+1.  Cari file bernama `.env.example` di folder utama.
+2.  Ubah namanya menjadi `.env`.
+3.  Buka file tersebut dan isi `PAIRING_NUMBER` dengan nomor yang akan dijadikan bot.
+
+---
+
+## 🚦 Cara Menjalankan Bot
+
+Setelah semua pengaturan selesai, kembali ke Terminal/CMD dan ketik:
 ```bash
 npm start
 ```
 
-### Pairing & Troubleshooting
+### Cara Menyambungkan ke WhatsApp:
+1.  Setelah mengetik `npm start`, terminal akan menampilkan **8 digit kode pairing** (Contoh: `ABC1-DEF2`).
+2.  Buka WhatsApp di HP Anda.
+3.  Klik **Titik Tiga (Pojok Kanan Atas)** > **Perangkat Tertaut** > **Tautkan Perangkat**.
+4.  Pilih **Tautkan dengan nomor telepon saja**.
+5.  Masukkan 8 digit kode yang muncul di terminal tadi.
+6.  Selesai! Bot sekarang sudah aktif.
 
-Jika session belum terdeteksi, Yuki akan otomatis meminta proses pairing menggunakan nomor WhatsApp yang sudah kamu set di PAIRING_NUMBER.
+---
 
-Jika terjadi error saat pairing:
+## 📂 Mengenal Folder Yuki (Untuk Awam)
 
-1. Hapus file auth.db
-2. Hapus juga file pendukung seperti .shm dan .wal
-3. Jalankan ulang bot
+*   **`plugins/`**: Tempat semua "kepintaran" bot berada. Jika Anda ingin menambah fitur baru, di sinilah tempatnya.
+*   **`data/`**: Tempat bot menyimpan ingatan, seperti siapa saja yang punya banyak uang atau siapa yang sedang di-banned.
+*   **`tmp/`**: Folder sampah sementara untuk memproses foto atau video sebelum dikirim.
 
-### Selesai 🎉
+---
 
-Jika semua langkah dilakukan dengan benar, bot Yuki seharusnya sudah berhasil terkoneksi dan siap digunakan.
+## ❓ Tanya Jawab (FAQ)
 
-## Dokumentasi 
-TODO.
+**Q: Kenapa bot tidak bisa bikin stiker?**
+A: Pastikan **FFmpeg** sudah terinstal di komputer Anda dengan benar.
+
+**Q: Bagaimana cara mematikan bot?**
+A: Tekan tombol `Ctrl + C` secara bersamaan di Terminal/CMD Anda.
+
+**Q: Apakah data saya aman?**
+A: Ya, semua data disimpan di komputer Anda sendiri dalam file database SQLite di folder `data`.
+
+---
+
+**Dibuat dengan ❤️ oleh [Ditzzy](https://github.com/OhMyDitzzy)**
