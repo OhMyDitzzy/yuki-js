@@ -15,7 +15,10 @@ let handler = {
       let dir = filePath.split("/").slice(0, -1).join("/");
 
       const code = m.quoted.text;
-      const err = syntaxerror(code);
+      const err = syntaxerror(code, 'anonymous', {
+        sourceType: 'module',
+        allowAwaitOutsideFunction: true
+      });
 
       if (err) return m.reply(`❌ *Syntax Error Detected!*\n\n` +
         `Cannot save file due to syntax errors:\n` +

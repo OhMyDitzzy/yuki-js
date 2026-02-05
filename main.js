@@ -118,11 +118,10 @@ async function connectionUpdate(update) {
   }
 
   if (connection === 'close') {
-    // TODO: Implement a gracefull shutdown
-    /*if (conn.isShuttingDown) {
+    if (conn.isShuttingDown) {
       conn.logger.info('Connection closed gracefully');
       return;
-    }*/
+    }
 
     conn.logger.error('Connection lost...');
 
