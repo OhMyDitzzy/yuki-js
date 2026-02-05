@@ -6,11 +6,15 @@ import os from "os";
 import PhoneNumber from "awesome-phonenumber";
 import { fileTypeFromBuffer } from "file-type";
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
 import { Jimp, JimpMime } from 'jimp';
 import { makeInMemoryStore } from "./makeInMemoryStore.js"
 import pino from "pino";
 import { randomBytes } from "crypto";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 global.store = await makeInMemoryStore({ logger: pino().child({ level: "silent", stream: "store" }), saveInterval: 60000 })
 
@@ -121,7 +125,7 @@ export function makeWASocket(config, options = {}) {
           let type = await conn.getFile(path, true);
           let { res, data: file, filename: pathFile } = type;
 
-          if (res && res.status !== 200 || file.length <= 65536) {
+          if ((res && res.status !== 200) || (!res && file.length <= 65536)) {
             try { throw { json: JSON.parse(file.toString()) } }
             catch (e) { if (e.json) throw e.json }
           }

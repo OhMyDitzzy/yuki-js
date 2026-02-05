@@ -37,6 +37,7 @@
     "jimp": "^1.6.0",
     "node-webpmux": "^3.2.1",
     "pino": "^10.3.0",
+    "sharp": "^0.34.5",
     "syntax-error": "^1.4.0",
     "terminal-image": "^4.2.0",
     "url-regex-safe": "^4.0.0",
