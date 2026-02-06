@@ -38,7 +38,7 @@ let handler = {
         },
         contextInfo: {
           externalAdReply: {
-            title: "My Owner",
+            title: "My Owner (⁠｡⁠♡⁠‿⁠♡⁠｡⁠)",
             body: packageInfo.version,
             thumbnailUrl: pickRandom(gambar_yuki),
             mediaType: 1,
