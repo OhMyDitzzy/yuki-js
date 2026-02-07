@@ -1,6 +1,7 @@
 let handler = {
   cmd: /^del(ete)?$/i,
   limit: true,
+  usePrefix: false,
   exec: (m) => {
     if (!m.quoted) throw false
     let { chat, fromMe, id, isBaileys } = m.quoted

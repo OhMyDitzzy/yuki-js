@@ -1,4 +1,4 @@
-import _makeWASocket, { areJidsSameUser, downloadContentFromMessage, extractMessageContent, generateForwardMessageContent, generateWAMessage, delay, generateWAMessageFromContent, getDevice, isJidNewsletter, jidDecode, proto, WAMessageStubType } from "baileys";
+import _makeWASocket, { areJidsSameUser, downloadContentFromMessage, extractMessageContent, generateForwardMessageContent, generateWAMessage, delay, generateWAMessageFromContent, getDevice, isJidNewsletter, jidDecode, proto, WAMessageStubType, prepareWAMessageMedia } from "baileys";
 import { toAudio } from "./converter.js";
 import chalk from "chalk";
 import { format } from "util";
@@ -277,6 +277,133 @@ END:VCARD`.trim();
       },
       enumerable: true
     },
+    sendCarousel: {
+      async value(
+        jid,
+        bodyOpts,
+        cards,
+        quoted,
+      ) {
+        try {
+          let preparedCards = await Promise.all(cards.map(async (card) => {
+            let imageMedia;
+            if (card.image) {
+              if (Buffer.isBuffer(card.image)) {
+                imageMedia = await prepareWAMessageMedia(
+                  { image: card.image },
+                  { upload: conn.waUploadToServer }
+                );
+              } else if (typeof card.image === 'string') {
+                imageMedia = await prepareWAMessageMedia(
+                  { image: { url: card.image } },
+                  { upload: conn.waUploadToServer }
+                );
+              }
+            }
+
+            let cardButtons = card.buttons ? card.buttons.map((button) => {
+              if (button.type === "url") {
+                return {
+                  name: "cta_url",
+                  buttonParamsJson: JSON.stringify({
+                    display_text: button.text,
+                    url: button.url,
+                    merchant_url: button.url
+                  })
+                };
+              } else if (button.type === 'copy') {
+                return {
+                  name: "cta_copy",
+                  buttonParamsJson: JSON.stringify({
+                    display_text: button.text,
+                    id: button.id,
+                    copy_code: button.copy_code
+                  })
+                };
+              } else if (button.type === 'buttons') {
+                return {
+                  name: "quick_reply",
+                  buttonParamsJson: JSON.stringify({
+                    display_text: button.text,
+                    id: button.id
+                  })
+                };
+              } else if (button.type === "reminder") {
+                return {
+                  name: "cta_reminder",
+                  buttonParamsJson: JSON.stringify({
+                    display_text: button.text,
+                    id: button.id
+                  })
+                };
+              } else if (button.type === "webview") {
+                return {
+                  name: "open_webview",
+                  buttonParamsJson: JSON.stringify({
+                    link: {
+                      in_app_webview: true,
+                      display_text: button.text,
+                      url: button.url,
+                      success_url: button.url + "/success",
+                      cancel_url: button.url + "/cancel"
+                    }
+                  })
+                };
+              }
+            }) : [];
+
+            return {
+              ...(card.header && imageMedia && {
+                header: proto.Message.InteractiveMessage.Header.create({
+                  title: card.header,
+                  hasMediaAttachment: true,
+                  ...imageMedia
+                })
+              }),
+              ...(card.body && {
+                body: proto.Message.InteractiveMessage.Body.create({
+                  text: card.body
+                })
+              }),
+              ...(card.footer && {
+                footer: proto.Message.InteractiveMessage.Footer.create({
+                  text: card.footer
+                })
+              }),
+              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                buttons: cardButtons
+              })
+            };
+          }));
+
+          let msg = generateWAMessageFromContent(jid, {
+            interactiveMessage: proto.Message.InteractiveMessage.create({
+              ...(bodyOpts.contextInfo && {
+                contextInfo: bodyOpts.contextInfo
+              }),
+              ...(bodyOpts.header && {
+                header: proto.Message.InteractiveMessage.Header.create(bodyOpts.header)
+              }),
+              ...(bodyOpts.body && {
+                body: proto.Message.InteractiveMessage.Body.create(bodyOpts.body)
+              }),
+              ...(bodyOpts.footer && {
+                footer: proto.Message.InteractiveMessage.Footer.create(bodyOpts.footer)
+              }),
+              carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.create({
+                cards: preparedCards
+              })
+            })
+          }, quoted);
+
+          await conn.relayMessage(jid, msg.message, {
+            messageId: msg.key.id
+          });
+        } catch (e) {
+          console.error('Error sending carousel:', e);
+        }
+      }
+    },
     sendButtonLoc: {
       async value(jid, text, footer, btn, locOpts = {}, options = {}) {
         try {
@@ -376,6 +503,88 @@ END:VCARD`.trim();
         } catch (error) {
           console.error('Error in sendButtonLoc:', error);
           throw error;
+        }
+      }
+    },
+    sendButton: {
+      async value(jid, btnOpts, buttons, quoted) {
+        try {
+          let interactiveBtn = buttons.map((button) => {
+            if (button.type === "url") {
+              return {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                  display_text: button.text,
+                  url: button.url,
+                  merchant_url: button.url
+                })
+              }
+            } else if (button.type === 'copy') {
+              return {
+                name: "cta_copy",
+                buttonParamsJson: JSON.stringify({
+                  display_text: button.text,
+                  id: button.id,
+                  copy_code: button.copy_code
+                })
+              }
+            } else if (button.type === 'buttons') {
+              return {
+                name: "quick_reply",
+                buttonParamsJson: JSON.stringify({
+                  display_text: button.text,
+                  id: button.id
+                })
+              };
+            } else if (button.type === "reminder") {
+              return {
+                name: "cta_reminder",
+                buttonParamsJson: JSON.stringify({
+                  display_text: button.text,
+                  id: button.id
+                })
+              }
+            } else if (button.type === "webview") {
+              return {
+                name: "open_webview",
+                buttonParamsJson: JSON.stringify({
+                  link: {
+                    in_app_webview: true,
+                    display_text: button.text,
+                    url: button.url,
+                    success_url: button.url + "/success",
+                    cancel_url: button.url + "/cancel"
+                  }
+                })
+              }
+            }
+          });
+
+          let msg = generateWAMessageFromContent(jid, {
+            interactiveMessage: proto.Message.InteractiveMessage.create({
+              ...(btnOpts.contextInfo && {
+                contextInfo: btnOpts.contextInfo
+              }),
+              ...(btnOpts.header && {
+                header: proto.Message.InteractiveMessage.Header.create(btnOpts.header)
+              }),
+              ...(btnOpts.body && {
+                body: proto.Message.InteractiveMessage.Body.create(btnOpts.body)
+              }),
+              ...(btnOpts.footer && {
+                footer: proto.Message.InteractiveMessage.Footer.create(btnOpts.footer)
+              }),
+              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                buttons: interactiveBtn
+              })
+            })
+          }, quoted)
+
+          await conn.relayMessage(jid, msg.message, {
+            messageId: msg.key.id,
+          })
+        } catch (e) {
+          console.error(`Error sending button message: ${e}`)
         }
       }
     },
@@ -867,7 +1076,7 @@ END:VCARD`.trim();
               if (!context || !context.quotedMessage || typeof context.quotedMessage !== 'object' || Object.keys(context.quotedMessage).length === 0) {
                 continue;
               }
-              
+
               let participant = await conn.decodeJid(context.participant);
               const remoteJid = await conn.decodeJid(
                 context.remoteJid || participant,
