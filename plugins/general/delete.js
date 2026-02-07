@@ -3,10 +3,17 @@ let handler = {
   limit: true,
   usePrefix: false,
   exec: (m) => {
-    if (!m.quoted) throw false
-    let { chat, fromMe, id, isBaileys } = m.quoted
-    if (!isBaileys) return conn.reply(m.chat, 'Pesan tersebut bukan dikirim oleh bot!', m)
-    conn.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: true, id: m.quoted.id, participant: m.quoted.sender } })
+    let key = {}
+    try {
+      key.remoteJid = m.quoted ? m.quoted.fakeObj.key.remoteJid : m.key.remoteJid
+      key.fromMe = m.quoted ? m.quoted.fakeObj.key.fromMe : m.key.fromMe
+      key.id = m.quoted ? m.quoted.fakeObj.key.id : m.key.id
+      key.participant = m.quoted ? m.quoted.fakeObj.participant : m.key.participant
+    } catch (e) {
+      console.error(e)
+    }
+
+    conn.sendMessage(m.chat, { delete: key })
   }
 }
 
